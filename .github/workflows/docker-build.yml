@@ -1,4 +1,4 @@
-name: Build and push to Docker Hub
+name: CI/CD - msv-despacho
 
 on:
   push:
@@ -8,30 +8,40 @@ on:
 
 env:
   IMAGE_NAME: maxhernandezg/msv-despacho
+  CONTAINER_NAME: msv-despacho
+  APP_PORT: 8081
+  AWS_REGION: us-east-1
+  DB_ENDPOINT: db-despacho.cno4q67npiqt.us-east-1.rds.amazonaws.com
+  DB_PORT: 3306
+  DB_NAME: despacho_db
+  DB_USERNAME: admin
 
 jobs:
   build_and_push:
-    name: Build and push image
+    name: Construir imagen y subir a Docker Hub
     runs-on: ubuntu-latest
 
+    outputs:
+      sha_short: ${{ steps.vars.outputs.sha_short }}
+
     steps:
-      - name: Checkout repository
+      - name: Clonar repositorio
         uses: actions/checkout@v4
 
-      - name: Set short SHA tag
+      - name: Definir tag SHA corto
         id: vars
         run: echo "sha_short=$(echo ${GITHUB_SHA} | cut -c1-7)" >> "$GITHUB_OUTPUT"
 
-      - name: Set up Docker Buildx
+      - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
+      - name: Iniciar sesión en Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Construir y publicar imagen
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -42,3 +52,38 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.sha_short }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy_ec2:
+    name: Desplegar en EC2 vía SSM
+    needs: build_and_push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Ejecutar pull y restart del container en EC2
+        run: |
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy ${{ env.IMAGE_NAME }}:${{ needs.build_and_push.outputs.sha_short }}" \
+            --parameters commands='[
+              "docker pull ${{ env.IMAGE_NAME }}:latest",
+              "docker stop ${{ env.CONTAINER_NAME }} || true",
+              "docker rm ${{ env.CONTAINER_NAME }} || true",
+              "docker run -d --name ${{ env.CONTAINER_NAME }} --restart unless-stopped -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} -e DB_ENDPOINT=${{ env.DB_ENDPOINT }} -e DB_PORT=${{ env.DB_PORT }} -e DB_NAME=${{ env.DB_NAME }} -e DB_USERNAME=${{ env.DB_USERNAME }} -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} ${{ env.IMAGE_NAME }}:latest",
+              "docker image prune -f"
+            ]' \
+            --query "Command.CommandId" --output text)
+          echo "SSM Command ID: $CMD_ID"
+          echo "Esperando finalización del despliegue..."
+          aws ssm wait command-executed \
+            --command-id "$CMD_ID" \
+            --instance-id "${{ secrets.EC2_INSTANCE_ID }}"
+          echo "Despliegue completado correctamente."
