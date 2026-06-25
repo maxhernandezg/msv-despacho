@@ -1,0 +1,55 @@
+name: CI/CD - despacho (ECR + EKS)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 172591304240.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REPOSITORY: despacho
+  EKS_CLUSTER: innovatech-eks
+  K8S_NAMESPACE: innovatech
+  DEPLOYMENT: despacho
+  CONTAINER: despacho
+
+jobs:
+  build-push-deploy:
+    name: Build → Push ECR → Deploy EKS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login a Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build y Push de la imagen
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+                       -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Conectar kubectl al clúster
+        run: aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER
+
+      - name: Desplegar en EKS
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          kubectl apply -f k8s/despacho.yaml
+          kubectl set image deployment/$DEPLOYMENT \
+            $CONTAINER=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -n $K8S_NAMESPACE
+          kubectl rollout status deployment/$DEPLOYMENT -n $K8S_NAMESPACE --timeout=180s

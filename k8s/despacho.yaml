@@ -1,0 +1,95 @@
+# ============================================================
+# Microservicio DESPACHO (Spring Boot, puerto 8081)
+# - Deployment: corre la imagen desde ECR
+# - Service:    expone "despacho-service" dentro del clúster (lo usa el nginx del front)
+# - HPA:        autoscaling por CPU al 50% (IE3)
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: despacho
+  namespace: innovatech
+  labels:
+    app: despacho
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: despacho
+  template:
+    metadata:
+      labels:
+        app: despacho
+    spec:
+      containers:
+        - name: despacho
+          # El pipeline reemplaza el tag :latest por el SHA del commit en cada deploy.
+          image: 172591304240.dkr.ecr.us-east-1.amazonaws.com/despacho:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: DB_ENDPOINT
+              value: "mysql"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              value: "despacho_db"
+            - name: DB_USERNAME
+              value: "root"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          readinessProbe:
+            tcpSocket:
+              port: 8081
+            initialDelaySeconds: 40
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8081
+            initialDelaySeconds: 90
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: despacho-service
+  namespace: innovatech
+  labels:
+    app: despacho
+spec:
+  type: ClusterIP
+  selector:
+    app: despacho
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: despacho-hpa
+  namespace: innovatech
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: despacho
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
