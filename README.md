@@ -181,3 +181,4 @@ cd serverless && ./provision.sh    # provisiona todo (IaC)
 cd serverless && ./teardown.sh     # borra la capa serverless
 # Para borrar el clúster EKS: ver el repo del frontend / runbook
 ```
+Demo CI/CD Sat Jun 27 09:42:11 -04 2026
