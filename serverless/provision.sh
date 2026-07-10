@@ -16,7 +16,7 @@ set -euo pipefail
 
 # ---------------------------- Configuración -----------------------------------
 REGION="us-east-1"
-ACCOUNT_ID="172591304240"
+ACCOUNT_ID="456597982359"
 LAB_ROLE="arn:aws:iam::${ACCOUNT_ID}:role/LabRole"
 QUEUE_NAME="despachos-queue"
 PRODUCTOR="productor-despacho"

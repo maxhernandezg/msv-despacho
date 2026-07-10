@@ -24,7 +24,7 @@ spec:
       containers:
         - name: despacho
           # El pipeline reemplaza el tag :latest por el SHA del commit en cada deploy.
-          image: 172591304240.dkr.ecr.us-east-1.amazonaws.com/despacho:latest
+          image: 456597982359.dkr.ecr.us-east-1.amazonaws.com/despacho:latest
           ports:
             - containerPort: 8081
           env:

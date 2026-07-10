@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REGISTRY: 172591304240.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REGISTRY: 456597982359.dkr.ecr.us-east-1.amazonaws.com
   ECR_REPOSITORY: despacho
   EKS_CLUSTER: innovatech-eks
   K8S_NAMESPACE: innovatech

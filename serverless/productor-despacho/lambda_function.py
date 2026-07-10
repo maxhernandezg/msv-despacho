@@ -6,7 +6,7 @@ publica como mensaje en la cola SQS 'despachos-queue' (patrón productor).
 El procesamiento real lo hace, de forma asíncrona, la Lambda consumidora.
 
 Variables de entorno:
-  QUEUE_URL = https://sqs.us-east-1.amazonaws.com/172591304240/despachos-queue
+  QUEUE_URL = https://sqs.us-east-1.amazonaws.com/456597982359/despachos-queue
 
 Rol de ejecución: LabRole (tiene permisos para SQS y CloudWatch Logs).
 """
