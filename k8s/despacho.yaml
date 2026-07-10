@@ -12,7 +12,14 @@ metadata:
   labels:
     app: despacho
 spec:
-  replicas: 1
+  replicas: 2                 # una replica por zona de disponibilidad (alta disponibilidad)
+  # maxSurge 0 = borra un pod viejo antes de crear el nuevo -> mantiene el balance
+  # entre zonas en cada rolling update (no rompe el topologySpread).
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: despacho
@@ -21,6 +28,14 @@ spec:
       labels:
         app: despacho
     spec:
+      # Obliga a repartir las replicas entre las 2 zonas: si cae una AZ, la otra sigue sirviendo.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: despacho
       containers:
         - name: despacho
           # El pipeline reemplaza el tag :latest por el SHA del commit en cada deploy.
@@ -84,7 +99,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: despacho
-  minReplicas: 1
+  minReplicas: 2               # nunca baja de 2: siempre una replica viva por zona
   maxReplicas: 3
   metrics:
     - type: Resource
