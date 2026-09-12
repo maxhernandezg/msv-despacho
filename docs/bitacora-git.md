@@ -104,7 +104,29 @@ gh pr create --base develop --head main --title "chore: sincronizar develop con 
 gh pr merge 5 --merge
 ```
 
-## 6. Comandos de verificacion y trazabilidad
+## 6. Creditos del equipo
+
+```bash
+git checkout develop
+git pull
+git checkout -b feature/equipo-y-revisores
+
+# ... usuarios de GitHub en el README y segundo integrante en CODEOWNERS ...
+
+# Commit con autoria compartida (aparece a nombre de ambos en GitHub)
+git commit -m "docs: identificar a ambos integrantes como autores y revisores
+
+Co-Authored-By: Marcos del Canto <133884986+MarcosdelCanto@users.noreply.github.com>"
+git push -u origin feature/equipo-y-revisores
+gh pr create --base develop --head feature/equipo-y-revisores
+gh pr merge 6 --merge
+
+# Publicacion a main
+gh pr create --base main --head develop --title "release: creditos del equipo"
+gh pr merge 7 --merge
+```
+
+## 7. Comandos de verificacion y trazabilidad
 
 ```bash
 git log --oneline --graph --all      # historial ramificado completo
@@ -127,3 +149,12 @@ gh run list                          # ejecuciones de los workflows
 | 3 | `develop` | `main` | release | Publicacion a produccion de lo integrado en develop |
 | 4 | `hotfix/location-header-post` | `main` | hotfix | Correccion del encabezado `Location` en el POST |
 | 5 | `main` | `develop` | chore | Sincronizacion de develop con la correccion publicada |
+| 6 | `feature/equipo-y-revisores` | `develop` | feature | Creditos del equipo y revisores (CODEOWNERS) |
+| 7 | `develop` | `main` | release | Publicacion de los creditos del equipo |
+| 8 | `feature/bitacora-final` | `develop` | docs | Cierre de la bitacora de trazabilidad |
+| 9 | `develop` | `main` | release | Publicacion del estado final del repositorio |
+
+Todos los Pull Requests se integraron con **merge commit** (`--no-ff`) y con el
+workflow de CI en verde. Las ramas no se eliminaron tras el merge, de modo que
+`main`, `develop`, `feature/*` y `hotfix/*` permanecen visibles en el
+repositorio como evidencia del modelo de ramificacion utilizado.
