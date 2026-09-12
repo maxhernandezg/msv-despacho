@@ -8,10 +8,14 @@ Microservicio **despacho** (Spring Boot) del sistema de gestión de despachos de
 
 ## Equipo
 
-| Integrante | Rol en el encargo |
-|------------|-------------------|
-| Maximiliano Hernandez Gallardo | Configuracion del repositorio, pipeline de CI/CD y revision de PRs |
-| Marcos del Canto Vargas | Documentacion de convenciones, pruebas y revision de PRs |
+| Integrante | Usuario de GitHub | Rol en el encargo |
+|------------|-------------------|-------------------|
+| Maximiliano Hernandez Gallardo | [@maxhernandezg](https://github.com/maxhernandezg) | Configuracion del repositorio, pipeline de CI/CD y revision de PRs |
+| Marcos del Canto Vargas | [@MarcosdelCanto](https://github.com/MarcosdelCanto) | Documentacion de convenciones, pruebas y revision de PRs |
+
+Ambos integrantes figuran como *code owners* del repositorio
+(`.github/CODEOWNERS`), por lo que GitHub solicita automaticamente su
+revision en cada Pull Request.
 
 Asignatura **DOY0101 — Ingenieria DevOps** · Evaluacion Parcial N°1 ·
 Repositorio: `maxhernandezg/msv-despacho`
