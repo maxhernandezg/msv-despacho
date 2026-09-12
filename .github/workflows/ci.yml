@@ -1,0 +1,61 @@
+# ---------------------------------------------------------------------------
+# Integracion Continua (CI) del microservicio despacho.
+#
+# Se ejecuta automaticamente en:
+#   - cada push a la rama develop  (rama de integracion del equipo)
+#   - cada pull request hacia main (rama de produccion) y hacia develop
+#
+# Objetivo: que ningun cambio llegue a develop ni a main sin haber compilado
+# y pasado las pruebas automatizadas en un entorno limpio en la nube
+# (runner efimero ubuntu-latest de GitHub Actions).
+# ---------------------------------------------------------------------------
+name: CI - despacho
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Compilar y ejecutar pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+
+      - name: Compilar y ejecutar pruebas unitarias
+        run: ./mvnw -B verify
+
+      - name: Publicar reporte de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-pruebas-despacho
+          path: target/surefire-reports/
+          if-no-files-found: ignore
+
+  docker-build:
+    name: Validar construccion de la imagen Docker
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      # No se publica la imagen: solo se valida que el Dockerfile construye.
+      # La publicacion a ECR y el despliegue ocurren en deploy-eks.yml (CD).
+      - name: Construir imagen
+        run: docker build -t despacho:${{ github.sha }} .
