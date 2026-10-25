@@ -47,9 +47,31 @@ jobs:
           path: target/surefire-reports/
           if-no-files-found: ignore
 
+  analisis-seguridad:
+    name: Analisis de codigo y seguridad
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+
+      - name: Analisis SonarCloud y quality gate
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./mvnw -B verify sonar:sonar -Dsonar.qualitygate.wait=true
+
   docker-build:
     name: Validar construccion de la imagen Docker
-    needs: build-test
+    needs: [build-test, analisis-seguridad]
     runs-on: ubuntu-latest
     steps:
       - name: Clonar repositorio
