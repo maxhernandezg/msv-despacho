@@ -31,7 +31,7 @@ jobs:
     if: ${{ vars.DEPLOY_EKS == 'true' }}
     steps:
       - name: Clonar repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar credenciales AWS
         uses: aws-actions/configure-aws-credentials@v4
