@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configurar JDK 17 (Temurin)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: '17'
           distribution: temurin
@@ -58,7 +58,7 @@ jobs:
           fetch-depth: 0
 
       - name: Configurar JDK 17 (Temurin)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: '17'
           distribution: temurin
